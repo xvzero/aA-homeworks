@@ -1,49 +1,52 @@
 class Board
-  attr_accessor :cups, :player1, :player2
+  attr_accessor :cups
 
   def initialize(name1, name2)
-    @player1 = name1
-    @player2 = name2
+    @name1 = name1
+    @name2 = name2
     @cups = Array.new(14) { Array.new }
     place_stones
   end
 
   def place_stones
     # helper method to #initialize every non-store cup with four stones each
-    non_store_cups = [6, 13]
-
-    cups.each_index do |index|
-      unless non_store_cups.include?(index)
-        cups[index] = [:stone, :stone, :stone, :stone]
+    cups.each_index do |pos|
+      if pos.between?(0, 5) || pos.between?(7, 12)
+        4.times { cups[pos] << :stone }
       end
     end
   end
 
   def valid_move?(start_pos)
-    unless start_pos.between?(1, 6) || start_pos.between?(7, 12)
-      raise 'Invalid starting cup'
-    end
+    raise "Invalid starting cup" unless start_pos.between?(1, 6) || start_pos.between?(7, 12)
   end
 
   def make_move(start_pos, current_player_name)
-    available_stones = cups[start_pos]
+    stones_remaining = cups[start_pos]
     cups[start_pos] = []
-    until available_stones.empty?
-      start_pos += 1
-      start_pos += 1 if start_pos == 0 && current_player_name == player2
-      start_pos += 1 if start_pos == 13 && current_player_name == player1
-      start_pos %= cups.count if start_pos > 13
-      cups[start_pos] << available_stones.shift
-    end
-    render
 
-    next_turn(start_pos)
+    current_pos = start_pos
+    until stones_remaining.empty?
+      current_pos = (current_pos + 1) % cups.count
+      current_pos = 7 if current_pos == 6 && current_player_name == @name2
+      current_pos = 0 if current_pos == 13 && current_player_name == @name1
+      cups[current_pos] << stones_remaining.pop
+    end
+
+    render
+    p current_pos, current_player_name
+    next_turn(current_pos, current_player_name)
   end
 
-  def next_turn(ending_cup_idx)
+  def next_turn(ending_cup_idx, current_player_name)
     # helper method to determine what #make_move returns
-    if cups[ending_cup_idx].count == 1
+    if ending_cup_idx == 6 && current_player_name == @name1 ||
+        ending_cup_idx == 13 && current_player_name == @name2
+      :prompt
+    elsif cups[ending_cup_idx].count == 1
       :switch
+    else
+      ending_cup_idx
     end
   end
 
@@ -56,8 +59,17 @@ class Board
   end
 
   def one_side_empty?
+    cups[0..5].all?(&:empty?) || cups[7..12].all?(&:empty?)
   end
 
   def winner
+    case cups[6] <=> cups[13]
+    when 1
+      @name1
+    when 0
+      :draw
+    when -1
+      @name2
+    end
   end
 end
