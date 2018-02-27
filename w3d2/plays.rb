@@ -64,7 +64,7 @@ class Play
   end
 
   def self.find_by_playwright(name)
-    playwrite = Playwrite.find_by_name(name)
+    playwright = Playwright.find_by_name(name)
     raise "#{name} not found in DB" unless playwright
 
     plays = PlayDBConnection.instance.execute(<<-SQL, playwright.id)
